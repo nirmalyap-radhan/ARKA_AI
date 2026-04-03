@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 33% 97%;
+    --foreground: 20 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 25% 15%;
+
+    --primary: 12 76% 61%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 42% 51%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 30 20% 92%;
+    --muted-foreground: 20 10% 45%;
+
+    --accent: 38 92% 64%;
+    --accent-foreground: 20 25% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 12 76% 61%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 12 76% 61%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 20% 94%;
+    --sidebar-accent-foreground: 20 25% 15%;
+    --sidebar-border: 30 15% 88%;
+    --sidebar-ring: 12 76% 61%;
+
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+
+    --shadow-card: 0 4px 24px -4px hsl(20 25% 15% / 0.08);
+    --shadow-elevated: 0 12px 40px -8px hsl(20 25% 15% / 0.12);
+  }
+
+  .dark {
+    --background: 20 20% 8%;
+    --foreground: 30 20% 92%;
+    --card: 20 18% 12%;
+    --card-foreground: 30 20% 92%;
+    --popover: 20 18% 12%;
+    --popover-foreground: 30 20% 92%;
+    --primary: 12 76% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 174 42% 51%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 20 15% 18%;
+    --muted-foreground: 30 10% 60%;
+    --accent: 38 92% 64%;
+    --accent-foreground: 20 25% 15%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 20 15% 20%;
+    --input: 20 15% 20%;
+    --ring: 12 76% 61%;
+    --sidebar-background: 20 18% 10%;
+    --sidebar-foreground: 30 20% 92%;
+    --sidebar-primary: 12 76% 61%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 20 15% 16%;
+    --sidebar-accent-foreground: 30 20% 92%;
+    --sidebar-border: 20 15% 18%;
+    --sidebar-ring: 12 76% 61%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  .animate-scan-line {
+    animation: scan-line 2.5s ease-in-out infinite;
+  }
+  .animate-vr-scan {
+    animation: vr-scan 4s ease-in-out infinite;
+    transform-style: preserve-3d;
+  }
+  .animate-hologram {
+    animation: hologram 3s infinite linear;
+  }
+  .animate-grid-move {
+    background-size: 50px 50px;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    animation: grid-move 20s linear infinite;
+  }
+  .animate-radar {
+    animation: radar-pulse 3s ease-out infinite;
+  }
+  .animate-text-flicker {
+    animation: text-flicker 2s linear infinite;
+  }
+}
+
+@keyframes scan-line {
+  0%, 100% { top: 0; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes vr-scan {
+  0% { 
+    transform: perspective(1000px) rotateX(15deg) rotateY(-10deg) scale(0.95); 
+    box-shadow: 0 0 30px rgba(var(--primary), 0.4); 
+  }
+  50% { 
+    transform: perspective(1000px) rotateX(-10deg) rotateY(15deg) scale(1.02); 
+    box-shadow: 0 0 50px rgba(var(--primary), 0.8), 0 0 100px rgba(var(--secondary), 0.4); 
+  }
+  100% { 
+    transform: perspective(1000px) rotateX(15deg) rotateY(-10deg) scale(0.95); 
+    box-shadow: 0 0 30px rgba(var(--primary), 0.4); 
+  }
+}
+
+@keyframes hologram {
+  0% { opacity: 0.5; filter: hue-rotate(0deg); }
+  50% { opacity: 0.8; filter: hue-rotate(15deg); }
+  100% { opacity: 0.5; filter: hue-rotate(0deg); }
+}
+
+@keyframes grid-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 50px 50px; }
+}
+
+@keyframes radar-pulse {
+  0% { transform: scale(0.5); opacity: 1; border-width: 4px; }
+  100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+}
+
+@keyframes text-flicker {
+  0% { opacity: 0.8; }
+  5% { opacity: 0.5; }
+  10% { opacity: 0.9; }
+  15% { opacity: 0.4; }
+  25% { opacity: 0.8; }
+  30% { opacity: 1; }
+  100% { opacity: 0.9; }
+}

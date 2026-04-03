@@ -1,0 +1,35 @@
+import json
+import random
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
+
+# Load dataset
+with open("chatbot_intents.json") as file:
+    data = json.load(file)
+
+patterns = []
+tags = []
+
+# Prepare data
+for intent in data["intents"]:
+    for pattern in intent["patterns"]:
+        patterns.append(pattern)
+        tags.append(intent["tag"])
+
+# Vectorize
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(patterns)
+
+# Model
+model = LogisticRegression()
+model.fit(X, tags)
+
+# Test
+while True:
+    user_input = input("You: ")
+    X_test = vectorizer.transform([user_input])
+    prediction = model.predict(X_test)[0]
+
+    for intent in data["intents"]:
+        if intent["tag"] == prediction:
+            print("Bot:", random.choice(intent["responses"]))
