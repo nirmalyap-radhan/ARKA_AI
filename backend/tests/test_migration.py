@@ -615,16 +615,37 @@ def test_invalid_json_model_response(client):
 
 
 def test_high_demand_failover(client):
-    """When a model encounters a 503 high demand spike, automatically fail over to next model."""
+    """When a model encounters a 503 high demand spike, automatically retry and succeed."""
     mock_gemini = MagicMock()
     err_503 = errors.ServerError(503, {"error": {"code": 503, "message": "This model is currently experiencing high demand."}})
     mock_resp = MagicMock()
-    mock_resp.text = "Recovered seamlessly via fallback model!"
+    mock_resp.text = "Recovered seamlessly via retry!"
     mock_gemini.models.generate_content.side_effect = [err_503, mock_resp]
 
     with patch("main.client", mock_gemini):
         response = client.post("/chat", json={"message": "hello"})
         assert response.status_code == 200
-        assert response.json()["response"] == "Recovered seamlessly via fallback model!"
+        assert response.json()["response"] == "Recovered seamlessly via retry!"
         assert mock_gemini.models.generate_content.call_count == 2
+
+
+def test_retired_model_auto_migration(client):
+    """When an outdated/retired model returns 404, auto-migrate in-flight to gemini-3.8-flash."""
+    mock_gemini = MagicMock()
+    err_404 = errors.ClientError(404, {"error": {"code": 404, "message": "This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash"}})
+    mock_resp = MagicMock()
+    mock_resp.text = "Migrated in-flight to gemini-3.8-flash!"
+    mock_gemini.models.generate_content.side_effect = [err_404, mock_resp]
+
+    with patch("main.client", mock_gemini):
+        # Even if DEFAULT_GEMINI_MODEL were set to an old model, it migrates automatically
+        with patch("main.DEFAULT_GEMINI_MODEL", "gemini-2.0-flash"):
+            response = client.post("/chat", json={"message": "hello"})
+            assert response.status_code == 200
+            assert response.json()["response"] == "Migrated in-flight to gemini-3.8-flash!"
+            assert mock_gemini.models.generate_content.call_count == 2
+            # Verify second call used gemini-3.8-flash
+            call_args = mock_gemini.models.generate_content.call_args_list[1]
+            assert call_args.kwargs.get("model") == "gemini-3.8-flash"
+
 
