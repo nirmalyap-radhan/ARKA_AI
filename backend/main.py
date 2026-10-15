@@ -28,10 +28,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("arka_backend")
 
-# Centralized Gemini Model Configuration
-# Primary model: gemini-3.8-flash (official Google Gen AI free-tier model)
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+# Centralized Gemini Model Configuration with automatic multi-model failover
+# Prioritizes stable free-tier flash models: gemini-3.6-flash, gemini-3.8-flash
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 VISION_GEMINI_MODEL = os.getenv("GEMINI_VISION_MODEL", DEFAULT_GEMINI_MODEL)
+FALLBACK_MODELS = [
+    m.strip()
+    for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.8-flash").split(",")
+    if m.strip()
+]
 
 # API Key initialization
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -296,63 +301,79 @@ def call_gemini(
     config: Optional[types.GenerateContentConfig] = None,
 ):
     """
-    Execute a Gemini generate_content call with automatic retry on transient
-    503 capacity spikes and in-flight migration for retired models.
+    Execute a Gemini generate_content call with multi-model failover
+    and exponential backoff retry for transient capacity spikes.
     """
     api_client = get_gemini_client()
 
-    current_model = model
-    max_retries = 3
+    candidate_models = [model]
+    for fb in FALLBACK_MODELS:
+        if fb not in candidate_models:
+            candidate_models.append(fb)
 
-    for attempt in range(max_retries):
-        try:
-            return api_client.models.generate_content(
-                model=current_model,
-                contents=contents,
-                config=config,
-            )
-        except (errors.ServerError, errors.APIError) as api_err:
-            code = getattr(api_err, "code", None)
-            err_msg = str(api_err).lower()
+    last_exc = None
+    for m_idx, current_model in enumerate(candidate_models):
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                return api_client.models.generate_content(
+                    model=current_model,
+                    contents=contents,
+                    config=config,
+                )
+            except (errors.ServerError, errors.APIError) as api_err:
+                last_exc = api_err
+                code = getattr(api_err, "code", None)
+                err_msg = str(api_err).lower()
 
-            # 1. Handle retired model (404 NOT_FOUND) -> migrate immediately to gemini-3.8-flash
-            if code == 404 or "not_found" in err_msg or "no longer available" in err_msg:
-                if current_model != "gemini-3.8-flash":
+                # If 404 (retired model like 2.0-flash or 2.5-flash), skip immediately to next model
+                if code == 404 or "not_found" in err_msg or "no longer available" in err_msg:
                     logger.warning(
-                        "Model '%s' returned 404 (retired). Automatically migrating in-flight to 'gemini-3.8-flash'.",
+                        "Model '%s' returned 404 (unavailable). Trying next model in candidate pool...",
                         current_model,
                     )
-                    current_model = "gemini-3.8-flash"
-                    continue
+                    break
 
-            # 2. Handle transient demand spikes (503 / 500 / 504 / high demand)
-            is_transient = (
-                code in (503, 500, 504)
-                or "high demand" in err_msg
-                or "unavailable" in err_msg
-                or "overloaded" in err_msg
-                or "spikes in demand" in err_msg
-            )
-
-            if is_transient and attempt < max_retries - 1:
-                backoff = 1.0 * (attempt + 1)
-                logger.warning(
-                    "Model '%s' is experiencing high demand (code %s). Retrying in %.1fs (attempt %d/%d)...",
-                    current_model,
-                    code,
-                    backoff,
-                    attempt + 1,
-                    max_retries,
+                # If transient high-demand spike (503 / 500 / 504 / high demand)
+                is_transient = (
+                    code in (503, 500, 504)
+                    or "high demand" in err_msg
+                    or "unavailable" in err_msg
+                    or "overloaded" in err_msg
+                    or "spikes in demand" in err_msg
                 )
-                time.sleep(backoff)
-                continue
 
-            handle_gemini_error(api_err)
+                if is_transient:
+                    if attempt < max_retries - 1:
+                        backoff = 1.0 * (attempt + 1)
+                        logger.warning(
+                            "Model '%s' is experiencing high demand (code %s). Retrying in %.1fs...",
+                            current_model,
+                            code,
+                            backoff,
+                        )
+                        time.sleep(backoff)
+                        continue
+                    elif m_idx < len(candidate_models) - 1:
+                        next_model = candidate_models[m_idx + 1]
+                        logger.warning(
+                            "Model '%s' sustained high demand (code %s). Failing over to alternative model '%s'...",
+                            current_model,
+                            code,
+                            next_model,
+                        )
+                        time.sleep(0.5)
+                        break
 
-        except HTTPException:
-            raise
-        except Exception as exc:
-            handle_gemini_error(exc)
+                handle_gemini_error(api_err)
+
+            except HTTPException:
+                raise
+            except Exception as exc:
+                handle_gemini_error(exc)
+
+    if last_exc:
+        handle_gemini_error(last_exc)
 
 
 def parse_json_response(response: Any) -> dict:
