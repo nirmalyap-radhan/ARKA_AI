@@ -1,8 +1,30 @@
-# Ignore only Python virtual env lib (not frontend lib)
+# Environment variables & secrets
+.env
+*.env
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Python Virtual Environments
 venv/
 venv_mac/
 .venv/
 env/
 python_venv/
 
-# (DO NOT ignore src/lib)
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
