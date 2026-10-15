@@ -436,7 +436,7 @@ async def generate_itinerary(data: TripData):
 
         prompt = (
             f"Plan a {data.days}-day {data.style} trip to {data.destination} "
-            f"with a budget of ${data.budget}. Interests include: {interests_str}.\n\n"
+            f"with a budget of ₹{data.budget}. Interests include: {interests_str}.\n\n"
             "Return a valid JSON object containing an array named 'itinerary'. "
             "Each item in 'itinerary' must be an object with the following fields:\n"
             "- 'day': integer representing day number (1 to {data.days})\n"
@@ -972,7 +972,7 @@ Return a valid JSON object containing:
     - name: string
     - lat: float
     - lng: float
-    - price: string (e.g. "$45/night")
+    - price: string (e.g. "₹3,500/night")
     - rating: float (e.g. 4.4)
 - center: object containing lat (float), lng (float), and zoom (integer, 8-12) suitable to frame origin and destination on a map.
 

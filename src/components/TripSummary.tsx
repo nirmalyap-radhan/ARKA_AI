@@ -1,4 +1,4 @@
-import { Calendar, DollarSign, Star, MapPin } from "lucide-react";
+import { Calendar, IndianRupee, Star, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface TripSummaryProps {
@@ -38,10 +38,10 @@ const TripSummary = ({ destination, days, budget, style }: TripSummaryProps) => 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-primary" />
+            <IndianRupee className="h-4 w-4 text-primary" />
             <div>
               <p className="text-xs text-muted-foreground font-body">Budget</p>
-              <p className="font-body font-semibold text-sm">${budget.toLocaleString()}</p>
+              <p className="font-body font-semibold text-sm">₹{budget.toLocaleString()}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

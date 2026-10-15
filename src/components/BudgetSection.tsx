@@ -1,4 +1,4 @@
-import { Hotel, Utensils, Bus, Ticket, DollarSign } from "lucide-react";
+import { Hotel, Utensils, Bus, Ticket, IndianRupee } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
@@ -27,7 +27,7 @@ const BudgetSection = ({ totalBudget }: BudgetSectionProps) => {
     <Card className="shadow-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-display text-xl">
-          <DollarSign className="h-5 w-5 text-primary" /> Budget Breakdown
+          <IndianRupee className="h-5 w-5 text-primary" /> Budget Breakdown
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -37,14 +37,14 @@ const BudgetSection = ({ totalBudget }: BudgetSectionProps) => {
               <span className="flex items-center gap-2 text-sm font-body font-medium">
                 <item.icon className="h-4 w-4 text-muted-foreground" /> {item.label}
               </span>
-              <span className="text-sm font-body font-semibold">${item.amount.toLocaleString()}</span>
+              <span className="text-sm font-body font-semibold">₹{item.amount.toLocaleString()}</span>
             </div>
             <Progress value={(item.amount / totalBudget) * 100} className="h-2" />
           </div>
         ))}
         <div className="flex items-center justify-between border-t pt-3">
           <span className="font-body font-semibold">Total</span>
-          <span className="font-display text-lg font-bold text-primary">${totalSpent.toLocaleString()}</span>
+          <span className="font-display text-lg font-bold text-primary">₹{totalSpent.toLocaleString()}</span>
         </div>
       </CardContent>
     </Card>

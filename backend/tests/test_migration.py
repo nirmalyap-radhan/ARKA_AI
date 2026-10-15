@@ -463,7 +463,7 @@ def test_route_tracking_schema(client):
         "duration": "1 hour 15 mins",
         "traffic": "Estimated smooth flow along NH316",
         "hotels": [
-            {"name": "Mayfair Waves", "lat": 19.805, "lng": 85.839, "price": "$120/night", "rating": 4.6}
+            {"name": "Mayfair Waves", "lat": 19.805, "lng": 85.839, "price": "₹1,200/night", "rating": 4.6}
         ],
         "center": {"lat": 20.05, "lng": 85.82, "zoom": 10},
     })
