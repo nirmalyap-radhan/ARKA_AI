@@ -21,7 +21,7 @@
 
 - **Frontend**: React, Vite, TypeScript, Tailwind CSS, Shadcn/UI, Lucide React, Framer Motion (Deployed on Vercel: `https://arka-ai-woad.vercel.app`).
 - **Backend**: FastAPI (Python), Google Gen AI SDK (`google-genai`), Uvicorn, Pydantic, gTTS (Deployed on Render: `https://arka-ai-backend.onrender.com`).
-- **AI Provider**: Google Gemini API (`gemini-2.5-flash` prioritized for free-tier eligibility).
+- **AI Provider**: Google Gemini API (`gemini-3.8-flash` prioritized for free-tier eligibility).
 
 ---
 
@@ -54,7 +54,7 @@
    Add your Gemini API key:
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
-   GEMINI_MODEL=gemini-2.5-flash
+   GEMINI_MODEL=gemini-3.8-flash
    ```
 5. Run the server:
    ```bash
@@ -90,7 +90,7 @@ When deploying on Render:
    ```
 3. Configure Environment Variables in Render Dashboard:
    - `GEMINI_API_KEY`: Your Google AI Studio API key (Required)
-   - `GEMINI_MODEL`: `gemini-2.5-flash` (Optional, defaults to `gemini-2.5-flash`)
+   - `GEMINI_MODEL`: `gemini-3.8-flash` (Optional, defaults to `gemini-3.8-flash`)
    - `CORS_ORIGINS`: `https://arka-ai-woad.vercel.app,http://localhost:5173,http://localhost:3000` (Optional)
 
 ---

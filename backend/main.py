@@ -28,8 +28,8 @@ logging.basicConfig(
 logger = logging.getLogger("arka_backend")
 
 # Centralized Gemini Model Configuration (Free-tier prioritized)
-# Default model: gemini-2.5-flash (primary multimodal flash model on Gemini API free tier)
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+# Default model: gemini-3.8-flash (latest free-tier Flash model recommended by Google)
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 VISION_GEMINI_MODEL = os.getenv("GEMINI_VISION_MODEL", DEFAULT_GEMINI_MODEL)
 
 # API Key initialization
