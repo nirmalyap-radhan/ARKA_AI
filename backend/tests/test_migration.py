@@ -612,3 +612,19 @@ def test_invalid_json_model_response(client):
         response = client.post("/festivals", json={"location": "Puri"})
         assert response.status_code == 502
         assert "invalid JSON response" in response.json()["detail"]
+
+
+def test_high_demand_failover(client):
+    """When a model encounters a 503 high demand spike, automatically fail over to next model."""
+    mock_gemini = MagicMock()
+    err_503 = errors.ServerError(503, {"error": {"code": 503, "message": "This model is currently experiencing high demand."}})
+    mock_resp = MagicMock()
+    mock_resp.text = "Recovered seamlessly via fallback model!"
+    mock_gemini.models.generate_content.side_effect = [err_503, mock_resp]
+
+    with patch("main.client", mock_gemini):
+        response = client.post("/chat", json={"message": "hello"})
+        assert response.status_code == 200
+        assert response.json()["response"] == "Recovered seamlessly via fallback model!"
+        assert mock_gemini.models.generate_content.call_count == 2
+

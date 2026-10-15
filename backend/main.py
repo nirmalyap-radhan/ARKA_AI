@@ -1,5 +1,6 @@
 import os
 import io
+import time
 import json
 import base64
 import logging
@@ -27,10 +28,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("arka_backend")
 
-# Centralized Gemini Model Configuration (Free-tier prioritized)
-# Default model: gemini-3.8-flash (latest free-tier Flash model recommended by Google)
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+# Centralized Gemini Model Configuration with automatic failover
+# Prioritizes free-tier flash models: gemini-2.0-flash, gemini-3.8-flash, gemini-1.5-flash
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 VISION_GEMINI_MODEL = os.getenv("GEMINI_VISION_MODEL", DEFAULT_GEMINI_MODEL)
+FALLBACK_MODELS = [
+    m.strip()
+    for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.8-flash,gemini-1.5-flash").split(",")
+    if m.strip()
+]
 
 # API Key initialization
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -258,6 +264,14 @@ def handle_gemini_error(exc: Exception):
                 detail="Invalid request to the AI service. Please verify your input data.",
             )
 
+        # Service Unavailable / Temporary High Demand Spike
+        if code == 503 or "UNAVAILABLE" in msg or "high demand" in msg.lower() or "overloaded" in msg.lower():
+            logger.warning("Gemini service temporarily unavailable (code 503 / high demand): %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="The AI service is currently experiencing temporary high demand. Please try again in a few moments.",
+            )
+
         # General upstream error
         logger.exception("Gemini API error (code %s): %s", code, exc)
         raise HTTPException(
@@ -287,19 +301,58 @@ def call_gemini(
     config: Optional[types.GenerateContentConfig] = None,
 ):
     """
-    Execute a Gemini generate_content call with centralized error handling.
+    Execute a Gemini generate_content call with automatic high-demand failover
+    and centralized error handling across eligible free-tier models.
     """
-    try:
-        api_client = get_gemini_client()
-        return api_client.models.generate_content(
-            model=model,
-            contents=contents,
-            config=config,
-        )
-    except HTTPException:
-        raise
-    except Exception as exc:
-        handle_gemini_error(exc)
+    api_client = get_gemini_client()
+
+    # Build prioritized candidate models list
+    candidate_models = [model]
+    for fb in FALLBACK_MODELS:
+        if fb not in candidate_models:
+            candidate_models.append(fb)
+
+    last_exc = None
+    for idx, current_model in enumerate(candidate_models):
+        try:
+            return api_client.models.generate_content(
+                model=current_model,
+                contents=contents,
+                config=config,
+            )
+        except (errors.ServerError, errors.APIError) as api_err:
+            last_exc = api_err
+            code = getattr(api_err, "code", None)
+            err_msg = str(api_err).lower()
+
+            is_high_demand = (
+                code == 503
+                or "high demand" in err_msg
+                or "unavailable" in err_msg
+                or "overloaded" in err_msg
+            )
+
+            # If capacity spike occurs and fallbacks remain, attempt the next model
+            if is_high_demand and idx < len(candidate_models) - 1:
+                next_model = candidate_models[idx + 1]
+                logger.warning(
+                    "Model '%s' is experiencing high demand (code %s). Automatically failing over to '%s'.",
+                    current_model,
+                    code,
+                    next_model,
+                )
+                time.sleep(0.3)
+                continue
+
+            handle_gemini_error(api_err)
+
+        except HTTPException:
+            raise
+        except Exception as exc:
+            handle_gemini_error(exc)
+
+    if last_exc:
+        handle_gemini_error(last_exc)
 
 
 def parse_json_response(response: Any) -> dict:
